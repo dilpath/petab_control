@@ -85,6 +85,17 @@ setup(
     python_requires=f'>={minimum_python_version}',
     #entry_points=ENTRY_POINTS,
     extras_require={
+        'examples': [
+            'amici',
+            'fides',
+            'pypesto',
+            'more_itertools',
+            'notebook',
+            'numpy',
+            'pandas',
+            'yaml2sbml',
+            'petab_timecourse',
+        ],
         #'reports': ['Jinja2'],
         #'combine': ['python-libcombine>=0.2.6'],
         #'doc': [

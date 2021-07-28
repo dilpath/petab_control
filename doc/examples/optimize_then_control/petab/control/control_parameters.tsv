@@ -1,0 +1,2 @@
+parameterId	parameterScale	lowerBound	upperBound	nominalValue	estimate
+influx	log10	0.0001	10000	0	0

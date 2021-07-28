@@ -1,0 +1,5 @@
+parameterId	simulationConditionId	time	value	datasetId	controlParameterId
+influx	timecourse_patient	20	estimate	control	
+influx	timecourse_patient	40	estimate	control	
+influx	timecourse_patient	60	estimate	control	
+influx	timecourse_patient	80	estimate	control	

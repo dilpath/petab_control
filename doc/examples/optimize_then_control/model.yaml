@@ -1,0 +1,17 @@
+time:
+      variable: t
+
+odes:
+    - initialValue: substrate0
+      rightHandSide: (-1) * decay * substrate + influx
+      stateId: substrate
+
+parameters:
+    - nominalValue: 0.0
+      parameterId: substrate0
+
+    - nominalValue: 0.0
+      parameterId: decay
+
+    - nominalValue: 0.0
+      parameterId: influx

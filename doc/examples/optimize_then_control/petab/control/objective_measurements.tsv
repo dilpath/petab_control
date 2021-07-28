@@ -1,0 +1,10 @@
+observableId	simulationConditionId	time	measurement	datasetId
+observable_substrate	timecourse_patient	20	0.5	control
+observable_substrate	timecourse_patient	30	0.5	control
+observable_substrate	timecourse_patient	40	0.5	control
+observable_substrate	timecourse_patient	50	0.5	control
+observable_substrate	timecourse_patient	60	0.5	control
+observable_substrate	timecourse_patient	70	0.5	control
+observable_substrate	timecourse_patient	80	0.5	control
+observable_substrate	timecourse_patient	90	0.5	control
+observable_substrate	timecourse_patient	100	0.5	control
