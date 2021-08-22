@@ -17,6 +17,7 @@ from petab.C import (
     LOWER_BOUND,
     UPPER_BOUND,
 )
+import petab_timecourse
 from petab_timecourse import (
     TIMECOURSE,
     TIMECOURSE_ID,
@@ -28,6 +29,9 @@ from .constants import (
     CONTROL,
     ESTIMATE,
     PATH_LIKE,
+    TYPE_PATH,
+
+    CONTROL_TIME,
 )
 #from .control import (
 #    get_control_condition_id,
@@ -156,7 +160,8 @@ def parameter_controls_to_parameter_df(
         for control in controls:
             row = {
                 **{PARAMETER_ID: control.get_control_parameter_id()},
-                **dict(row_template)
+                **dict(row_template),
+                **{CONTROL_TIME: control.time},
             }
             if control.value == ESTIMATE:
                 row[ESTIMATE] = 1

@@ -10,7 +10,8 @@ ESTIMATE = 'estimate'
 DUMMY_VALUE = 0.1
 ZERO = 0
 
-PATH_LIKE = Union[str, Path]
+TYPE_PATH = Union[str, Path]
+PATH_LIKE = TYPE_PATH  # FIXME remove
 
 CONTROL = 'control'
 OBJECTIVE = 'objective'
@@ -29,3 +30,10 @@ from petab.C import (
 )
 
 LAST_MEASURED_TIMEPOINT = 'last_measured_timepoint'
+
+# TODO WIP For a combined original+control PEtab problem
+CONTROL_TIME = 'control_time'
+CATEGORY = 'category'
+# FIXME better name for the original PEtab problem without optimal control
+# added to it?
+ORIGINAL = 'original'
