@@ -224,6 +224,9 @@ class ParameterControl(Control):
     def get_control_condition_id(self):
         return f'control_condition__{self.get_id()}'
 
+    def get_event_id(self):
+        return f'control_event__{self.get_id()}'
+
 
 class Objective(Control):
     pass
@@ -379,6 +382,11 @@ class Problem():
         self,
     ) -> petab.Problem:
         petab_problem = copy.deepcopy(self.petab_problem)
+
+        start_time = self.start_time
+        if self.start_time == LAST_MEASURED_TIMEPOINT:
+            start_time = petab_problem.measurement_df[TIME].max()
+
         sbml_document = petab_problem.sbml_document
         sbml_model = sbml_document.getModel()
 
@@ -448,8 +456,36 @@ class Problem():
         #for id in switch_ids:
         #    add_parameter(sbml_model, id, DEFAULT_VALUE)
 
-        for parameter_id, formula in parameter_assignment_rules.items():
-            add_assignment_rule(sbml_model, parameter_id, formula)
+        #for parameter_id, formula in parameter_assignment_rules.items():
+        #    add_assignment_rule(sbml_model, parameter_id, formula)
+        # FIXME move to different file as function...
+        for parameter_id, controls in parameter_controls.items():
+            for control in controls:
+                event_id = control.get_event_id()
+                offset_control_time = control.time + start_time
+                trigger_formula = f'time >= {offset_control_time}'
+                variable = control.target_id
+                event_assignment_formula = control.value
+                if control.value == ESTIMATE:
+                    event_assignment_formula = control.get_control_parameter_id()
+
+                event = sbml_model.createEvent()
+                event.setId(event_id)
+                event.setUseValuesFromTriggerTime(True)
+
+                trigger = event.createTrigger()
+                trigger.setInitialValue(True)
+                trigger.setPersistent(True)
+                trigger_math = libsbml.parseL3Formula(trigger_formula)
+                trigger.setMath(trigger_math)
+
+                event_assignment = event.createEventAssignment()
+                event_assignment.setVariable(variable)
+                event_assignment_math = \
+                    libsbml.parseL3Formula(str(event_assignment_formula))
+                event_assignment.setMath(event_assignment_math)
+        # END FIXME
+
 
         parameter_df = parameter_controls_to_parameter_df(
             parameter_controls,
@@ -474,6 +510,9 @@ class Problem():
         petab_problem.parameter_df = parameter_df
         petab_problem.observable_df = self.objective_observable_df
         petab_problem.timecourse_df = timecourse_df
+
+        petab_problem.measurement_df[TIME] += start_time
+
         #print(timecourse_related_dfs)
         #breakpoint()
 
