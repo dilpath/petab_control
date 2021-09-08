@@ -255,6 +255,17 @@ def get_finite_control_petab_problem(
     # their value in the PEtab parameter table.
     petab_problem.parameter_df[NOMINAL_VALUE].loc[~desired_control_times] = 0
 
+    later_control_times = petab_problem.parameter_df[CONTROL_TIME].between(
+        t1,
+        np.inf,
+        inclusive=inclusive,
+    )
+    latest_control_df = petab_problem.parameter_df.loc[desired_control_times]
+    latest_control_value = latest_control_df.loc[latest_control_df.control_time==latest_control_df.control_time.max()]
+    latest_control_id = nominal_values[one(latest_control_value.index)]
+    #breakpoint()
+    petab_problem.parameter_df[NOMINAL_VALUE].loc[~desired_control_times] = 0
+
     # Should never be `None` unless optimal control is performed before fitting
     # for some reason.
     if nominal_values is not None:
