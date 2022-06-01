@@ -1,5 +1,0 @@
-observableId	simulationConditionId	time	measurement	datasetId
-observable_substrate	measured_patient	0	0.8	measured
-observable_substrate	measured_patient	5	0.8	measured
-observable_substrate	measured_patient	10	0.7	measured
-observable_substrate	measured_patient	15	0.7	measured

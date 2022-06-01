@@ -1,0 +1,6 @@
+control_id	parameterId	time	value	datasetId
+influx_00	influx	0	0.1	control
+influx_20	influx	20	estimate	control
+influx_40	influx	40;50;70	estimate	control
+influx_60	influx	60	5	control
+influx_80	influx	80	estimate	control

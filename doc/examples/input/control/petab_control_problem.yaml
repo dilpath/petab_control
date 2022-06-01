@@ -1,6 +1,7 @@
 problems:
   - problem_id: optimal_substrate
     start_time: last_measured_timepoint
+    timecourseId: timecourse1
     control:
       control_files:
         - controls.tsv

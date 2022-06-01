@@ -1,3 +1,2 @@
 parameterId	parameterScale	lowerBound	upperBound	nominalValue	estimate
-decay	log10	0.01	10	1	1
-substrate0	log10	0.01	10	1	1
+influx	log10	0.0001	10000	0.1	1

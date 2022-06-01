@@ -1,0 +1,5 @@
+parameterId	timecourseId	parameterName	conditionIds	type	parameterScale	lowerBound	upperBound	estimate	nominalValue
+q_		Default estimated q_		value	log10	1e-3	1e3	1	0.1
+q_		Default estimated time q_		time	lin	1e-3	1e3	1	0.1
+q_		Condition q_positive estimated q_	q_positive;q_negative	value	lin	1e-3	1e3	1	0.1
+q_		Default estimated time q_		time	lin	1e-3	1e3	1	0.1

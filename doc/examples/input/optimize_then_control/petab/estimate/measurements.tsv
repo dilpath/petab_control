@@ -1,0 +1,5 @@
+observableId	simulationConditionId	time	measurement	datasetId
+observable_substrate	timecourse1	0	0.8	measured
+observable_substrate	timecourse1	5	0.8	measured
+observable_substrate	timecourse1	10	0.7	measured
+observable_substrate	timecourse1	15	0.7	measured

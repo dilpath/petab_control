@@ -1,0 +1,5 @@
+parameterId	estimateId	time	value	datasetId	controlParameterId
+influx	first	20	estimate	control	
+influx	first	40	estimate	control	
+influx	2	60	estimate	control	
+influx	_3rd	80	estimate	control	
