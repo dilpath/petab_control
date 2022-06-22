@@ -496,15 +496,16 @@ class Problem():
 
         petab_problem = copy.deepcopy(petab_problem)
 
-        if fix_petab_problem_parameters is not None:
-            for parameter_id, parameter_value in fix_petab_problem_parameters.items():
-                petab_problem.parameter_df.loc[parameter_id, [
-                    NOMINAL_VALUE,
-                    ESTIMATE,
-                ]] = [
-                    parameter_value,
-                    0,
-                ]
+        if fix_petab_problem_parameters is None:
+            fix_petab_problem_parameters = {}
+        for parameter_id, parameter_value in fix_petab_problem_parameters.items():
+            petab_problem.parameter_df.loc[parameter_id, [
+                NOMINAL_VALUE,
+                ESTIMATE,
+            ]] = [
+                parameter_value,
+                0,
+            ]
 
         self.simulator_control_petab_problem = \
             get_control_petab_problem(
@@ -965,13 +966,16 @@ def get_control_petab_problem(
     }
     '''
 
-    condition_df = copy.deepcopy(petab_problem.condition_df)
-    condition_df.loc[CONTROL_CONDITION_ID] = None
-    condition_df.loc[CONTROL_TIMECOURSE_ID] = None
+    condition_df = pd.concat([
+        copy.deepcopy(petab_problem.condition_df),
+        pd.Series(name=CONTROL_CONDITION_ID).to_frame().T,
+        pd.Series(name=CONTROL_TIMECOURSE_ID).to_frame().T,
+    ])
+    condition_df.index.name = CONDITION_ID
 
     full_timecourse = Timecourse.from_timecourses(
         timecourses=[estimate_timecourse, control_timecourse],
-        durations=[petab_control_problem.start_time],
+        durations=[start_time],
         timecourse_id=CONTROL_TIMECOURSE_ID,
     )
     full_timecourse_df = full_timecourse.to_df()
