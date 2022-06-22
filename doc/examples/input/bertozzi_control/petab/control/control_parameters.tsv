@@ -1,0 +1,2 @@
+parameterId	parameterScale	lowerBound	upperBound	nominalValue	estimate
+intervention	log10	0.01	10	1	1

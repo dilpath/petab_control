@@ -1,0 +1,6 @@
+control_id	parameterId	time	value	datasetId
+intervention_00	intervention	0	1	control
+intervention_20	intervention	20	estimate	control
+intervention_40	intervention	40;50;70	estimate	control
+intervention_60	intervention	60	1	control
+intervention_80	intervention	80	estimate	control

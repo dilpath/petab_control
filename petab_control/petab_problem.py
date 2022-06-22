@@ -28,7 +28,6 @@ from petab_timecourse import (
 from .constants import (
     CONTROL,
     ESTIMATE,
-    PATH_LIKE,
     TYPE_PATH,
 
     CONTROL_TIME,

@@ -51,7 +51,7 @@ from .constants import (
     PARAMETER,
     STATE,
 
-    PATH_LIKE,
+    TYPE_PATH,
 
     PROBLEMS,
     CONTROL,
@@ -225,6 +225,14 @@ class Problem():
                 raise NotImplementedError(
                     f'Unknown start time: {start_time}'
                 )
+        else:
+            try:
+                start_time = float(start_time)
+            except TypeError as e:
+                raise TypeError(
+                    'Please specify a numeric start time or an implemented start time '
+                    f'ID. Specified start time: {start_time}'
+                ) from e
         self.start_time = start_time
 
         # FIXME todo checks
@@ -244,7 +252,7 @@ class Problem():
         #self.condition_id = one(condition_ids)
 
     @staticmethod
-    def from_yaml(yaml_path: PATH_LIKE) -> 'Problem':
+    def from_yaml(yaml_path: TYPE_PATH) -> 'Problem':
         yaml_path = parse_path(yaml_path)
         petab_path = yaml_path.parent
 
@@ -470,7 +478,8 @@ class Problem():
                 Keys are parameters IDs in `petab_problem.parameter_df`,
                 values are parameter values. The PEtab problems used by the
                 simulator and optimizer will fix these parameters
-                (i.e. they won't be estimated).
+                (i.e. they won't be estimated). Parameter values are expected
+                to be on linear scale.
             model_settings:
                 Keys are AMICI model setters (e.g. `setAlwaysCheckFinite`)
                 and values are supplied to the setters.
@@ -567,6 +576,34 @@ class Problem():
             )
         original_conditions[CONTROL_CONDITION_ID] = {}
 
+        # Replace fixed condition parameters with their values.
+        fixed_original_conditions = {
+            condition_id: {
+                k: fix_petab_problem_parameters.get(v, v)
+                for k, v in condition.items()
+            }
+            for condition_id, condition in original_conditions.items()
+        }
+        unreplaced_ids_in_conditions = set.union(*[
+            set([
+                value
+                for value in condition.values()
+                if isinstance(value, str)
+            ])
+            for condition in fixed_original_conditions.values()
+        ])
+        if unreplaced_ids_in_conditions:
+            raise ValueError(
+                "Please supply replacements for any IDs that appear in the "
+                f"original conditions. Unreplaced IDs: {unreplaced_ids_in_conditions}"
+            )
+        # Replace fixed parameter mapping parameters with their values.
+        self.simulator.replace_in_parameter_mapping(
+            replacements=fix_petab_problem_parameters,
+            scaled=False,
+        )
+        # FIXME check if any parameters remain
+
         simulator_periods_parameters, _ = \
             self.get_periods_parameters()
 
@@ -583,7 +620,7 @@ class Problem():
         self.simulator_default_problem_parameters_periods = [
             {
                 **default_problem_parameters,
-                **original_conditions[period.condition_id],
+                **fixed_original_conditions[period.condition_id],
                 # FIXME assumes the control timecourse always appears after the
                 #       original timecourse
                 **(
@@ -928,21 +965,14 @@ def get_control_petab_problem(
     }
     '''
 
-    condition_df = petab.get_condition_df(pd.DataFrame(data={
-        CONDITION_ID: [
-            CONTROL_TIMECOURSE_ID,
-            CONTROL_CONDITION_ID,
-            *original_condition_ids,
-        ],
-    }))
+    condition_df = copy.deepcopy(petab_problem.condition_df)
+    condition_df.loc[CONTROL_CONDITION_ID] = None
+    condition_df.loc[CONTROL_TIMECOURSE_ID] = None
 
     full_timecourse = Timecourse.from_timecourses(
-        [estimate_timecourse, control_timecourse],
+        timecourses=[estimate_timecourse, control_timecourse],
+        durations=[petab_control_problem.start_time],
         timecourse_id=CONTROL_TIMECOURSE_ID,
-        last_measured_timepoint=True,
-        last_measured_timepoints=[
-            max(petab_problem.measurement_df[TIME])
-        ],
     )
     full_timecourse_df = full_timecourse.to_df()
 
@@ -960,7 +990,6 @@ def get_control_petab_problem(
     #    original_parameter_df,
     #    petab_control_problem.parameter_df,
     #])
-    #breakpoint()
 
     petab_problem.measurement_df[TIME] += start_time
     petab_problem.measurement_df[SIMULATION_CONDITION_ID] = \

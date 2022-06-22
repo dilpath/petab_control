@@ -1,0 +1,3 @@
+observableId	observableName	observableFormula	noiseFormula	noiseDistribution	observableTransformation
+rki_germany_7day_average_cases	RKI Germany 7-day average cases	beta_ * Infected * Susceptible / (Infected + Recovered + Susceptible)	noiseParameter1_rki_germany_7day_average_cases	normal	log10
+rki_germany_7day_average_deaths	RKI Germany 7-day average deaths	mortality * gamma_ * Infected	noiseParameter1_rki_germany_7day_average_deaths	normal	log10

@@ -65,7 +65,7 @@ def pypesto_fun(
         petab_control_problem:
             The PEtab Control problem. NB: should already be
             setup with a simulator.
-        x_ids:
+        x_names:
             The parameter IDs, with an order that corresponds to
             `x`.
 
@@ -172,8 +172,8 @@ def get_pypesto_problem(
     petab_control_problem.setup_simulator(**setup_simulator_kwargs)
 
     x_names = [
-        parameter_id
-        for parameter_index, parameter_id in enumerate(
+        x_name
+        for x_index, x_name in enumerate(
             petab_control_problem
             .optimizer_control_petab_problem
             .parameter_df

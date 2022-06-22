@@ -11,11 +11,11 @@ from petab.C import (
 )
 
 from .constants import (
-    PATH_LIKE,
+    TYPE_PATH,
 )
 
 
-def parse_path(path: PATH_LIKE) -> Path:
+def parse_path(path: TYPE_PATH) -> Path:
     return Path(path)
 
 

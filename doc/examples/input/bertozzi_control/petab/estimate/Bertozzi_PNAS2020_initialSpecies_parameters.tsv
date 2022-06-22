@@ -1,0 +1,4 @@
+parameterId	parameterScale	lowerBound	upperBound	nominalValue	estimate
+initial_Infected	log10	1e-3	1e3	0.1	1
+initial_Recovered	log10	1e-3	1e3	0.1	1
+initial_Susceptible	log10	1e-3	83000000	83000000	0

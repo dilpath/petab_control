@@ -1,0 +1,4 @@
+parameterId	parameterScale	lowerBound	upperBound	nominalValue	estimate
+gamma_	log10	1e-8	1e8	0.1	1
+beta_	log10	1e-8	1e8	0.1	1
+mortality	log10	1e-8	1e0	0.1	1

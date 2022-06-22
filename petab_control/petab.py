@@ -32,7 +32,6 @@ from petab_timecourse.sbml import get_slug  # move to more appropriate location
 from .constants import (
     CONTROL,
     ESTIMATE,
-    PATH_LIKE,
     TYPE_PATH,
 
     CONTROL_TIME,
@@ -97,7 +96,7 @@ def get_switch_timecourse_df(
 
 
 def read_control_df(
-    df: Union[PATH_LIKE, pd.DataFrame],
+    df: Union[TYPE_PATH, pd.DataFrame],
 ) -> pd.DataFrame:
     """Read PEtab controls into a `pandas.Dataframe`.
 

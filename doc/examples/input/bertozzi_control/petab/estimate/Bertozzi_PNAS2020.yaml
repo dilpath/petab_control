@@ -1,0 +1,15 @@
+format_version: 1
+parameter_file:
+- Bertozzi_PNAS2020_parameters.tsv
+- Bertozzi_PNAS2020_initialSpecies_parameters.tsv
+problems:
+- condition_files:
+  - Bertozzi_PNAS2020_conditions.tsv
+  measurement_files:
+  - rki_germany_7day_average.tsv
+  observable_files:
+  - Bertozzi_PNAS2020_observables.tsv
+  sbml_files:
+  - Bertozzi_PNAS2020.xml
+  visualization_files:
+  - Bertozzi_PNAS2020_visualization.tsv

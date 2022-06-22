@@ -1,0 +1,14 @@
+problems:
+  - problem_id: bertozzi_control
+    start_time: 50
+    timecourseId: timecourse1
+    control:
+      control_files:
+        - controls.tsv
+      control_parameter_files:
+        - control_parameters.tsv
+    objective:
+      measurement_files: 
+        - objective_measurements.tsv
+      observable_files:
+        - objective_observables.tsv

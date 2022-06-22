@@ -1,0 +1,71 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<sbml xmlns="http://www.sbml.org/sbml/level2/version4" level="2" version="4">
+  <model id="Bertozzi2020___generic">
+    <listOfCompartments>
+      <compartment id="country" spatialDimensions="3" size="1" constant="true"/>
+    </listOfCompartments>
+    <listOfSpecies>
+      <species id="Infected"    compartment="country" initialConcentration="0" boundaryCondition="false" constant="false"/>
+      <species id="Recovered"   compartment="country" initialConcentration="0" boundaryCondition="false" constant="false"/>
+      <species id="Susceptible" compartment="country" initialConcentration="0" boundaryCondition="false" constant="false"/>
+    </listOfSpecies>
+    <listOfParameters>
+      <parameter id="beta_"  value="0" constant="true"/>
+      <parameter id="gamma_" value="0" constant="true"/>
+      <parameter id="intervention" value="1" constant="true"/>
+    </listOfParameters>
+    <listOfReactions>
+      <reaction id="Susceptible_to_Infected" reversible="false">
+        <listOfReactants>
+          <speciesReference species="Susceptible" stoichiometry="1"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Infected" stoichiometry="1"/>
+        </listOfProducts>
+        <listOfModifiers>
+          <modifierSpeciesReference species="Recovered"/>
+        </listOfModifiers>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> intervention </ci>
+              <ci> beta_ </ci>
+              <apply>
+                <divide/>
+                <apply>
+                  <times/>
+                  <ci> Infected </ci>
+                  <ci> Susceptible </ci>
+                </apply>
+                <apply>
+                  <plus/>
+                  <ci> Infected </ci>
+                  <ci> Recovered </ci>
+                  <ci> Susceptible </ci>
+                </apply>
+              </apply>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+      <reaction id="Infected_to_Recovered" reversible="false">
+        <listOfReactants>
+          <speciesReference species="Infected" stoichiometry="1"/>
+        </listOfReactants>
+        <listOfProducts>
+          <speciesReference species="Recovered" stoichiometry="1"/>
+        </listOfProducts>
+        <kineticLaw>
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <times/>
+              <ci> gamma_ </ci>
+              <ci> Infected </ci>
+            </apply>
+          </math>
+        </kineticLaw>
+      </reaction>
+    </listOfReactions>
+  </model>
+</sbml>
