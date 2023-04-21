@@ -9,10 +9,10 @@ from more_itertools import one
 import numpy as np
 import pandas as pd
 import petab
-from amici.petab_objective import (
-    LLH,
-    SLLH,
-)
+#from amici.petab_objective import (
+#    LLH,
+#    SLLH,
+#)
 from petab import (
     get_measurement_df,
     get_observable_df,
@@ -449,325 +449,325 @@ class Problem():
             periods_parameters.append(period_parameters)
         return periods_parameters, control_parameters
 
-    def setup_simulator(
-        self,
-        simulator_class: Simulator,
-        petab_problem: petab.Problem,
-        timecourse_id: str = None,
-        default_problem_parameters: Dict[str, float] = None,
-        model_settings: Dict[str, Any] = None,
-        solver_settings: Dict[str, Any] = None,
-        fix_petab_problem_parameters: Dict[str, float] = None,
-    ):
-        """Setup a timecourse simulator to solve the control problem.
-
-        Args:
-            simulator_class:
-                The simulator class to use. Should inherit from
-                `petab_timecourse.Simulator`.
-            petab_problem:
-                The original PEtab problem.
-            timecourse_id:
-                The ID of the timecourse in the original PEtab problem to use.
-            default_problem_parameters:
-                All parameters must have some value for each timecourse period,
-                for all periods in the original PEtab problem, and the control
-                problem. Default values for missing parameters can be provided
-                here. Keys are parameter IDs, values are parameter values.
-            fix_petab_problem_parameters:
-                Keys are parameters IDs in `petab_problem.parameter_df`,
-                values are parameter values. The PEtab problems used by the
-                simulator and optimizer will fix these parameters
-                (i.e. they won't be estimated). Parameter values are expected
-                to be on linear scale.
-            model_settings:
-                Keys are AMICI model setters (e.g. `setAlwaysCheckFinite`)
-                and values are supplied to the setters.
-            solver_settings:
-                Keys are AMICI solver setters (e.g. `setAbsoluteTolerance`)
-                and values are supplied to the setters.
-        """
-        if default_problem_parameters is None:
-            default_problem_parameters = {}
-
-        for parameter_id, parameter_value in default_problem_parameters.items():
-            default_problem_parameters[parameter_id] = \
-                petab.to_float_if_float(parameter_value)
-
-        petab_problem = copy.deepcopy(petab_problem)
-
-        if fix_petab_problem_parameters is None:
-            fix_petab_problem_parameters = {}
-        for parameter_id, parameter_value in fix_petab_problem_parameters.items():
-            petab_problem.parameter_df.loc[parameter_id, [
-                NOMINAL_VALUE,
-                ESTIMATE,
-            ]] = [
-                parameter_value,
-                0,
-            ]
-
-        self.simulator_control_petab_problem = \
-            get_control_petab_problem(
-                petab_control_problem=self,
-                petab_problem=petab_problem,
-                timecourse_id=timecourse_id,
-            )
-
-        self.optimizer_control_petab_problem = copy.deepcopy(
-            self.simulator_control_petab_problem
-        )
-        self.optimizer_control_petab_problem.parameter_df = (
-            pd.concat([
-                petab_problem.parameter_df.copy(),
-                self.parameter_df,
-            ])
-        )
-
-        self.simulator_control_petab_problem.parameter_df = (
-            pd.concat([
-                petab_problem.parameter_df.copy(),
-                self.control_parameter_df,
-            ])
-        )
-
-        self.simulator = simulator_class(
-            petab_problem=self.simulator_control_petab_problem,
-            timecourse_id=CONTROL_TIMECOURSE_ID,
-        )
-
-        # FIXME check whether explicit specification of `plist` is important
-        #if self.simulator.amici_model is None:
-        #    raise ValueError(
-        #        'Simulator must have an AMICI model, to set '
-        #        'sensitivities correctly.'
-        #    )
-        #sensitivity_parameters = {
-        #    parameter_id: (
-        #        self
-        #        .simulator
-        #        .amici_model
-        #        .getParameterIds()
-        #        .index(parameter_id)
-        #    )
-        #    for parameter_id in self.simulator_control_petab_problem.x_free_ids
-        #}
-
-        #for amici_edata in self.simulator.amici_edata_periods:
-        #    amici_edata.plist = list(sensitivity_parameters.values())
-
-        original_conditions = {
-            original_condition_id: dict(
-                petab_problem
-                .condition_df
-                .loc[original_condition_id]
-            )
-            for original_condition_id in set(
-                period.condition_id
-                for period in Timecourse.from_df(
-                    timecourse_df=petab_problem.timecourse_df,
-                    timecourse_id=timecourse_id,
-                ).periods
-            )
-        }
-        if CONTROL_CONDITION_ID in original_conditions:
-            raise ValueError(
-                'Please reimplement the PEtab problem to not have a condition with '
-                f'ID: {CONTROL_CONDITION_ID}'
-            )
-        original_conditions[CONTROL_CONDITION_ID] = {}
-
-        # Replace fixed condition parameters with their values.
-        fixed_original_conditions = {
-            condition_id: {
-                k: fix_petab_problem_parameters.get(v, v)
-                for k, v in condition.items()
-            }
-            for condition_id, condition in original_conditions.items()
-        }
-        unreplaced_ids_in_conditions = set.union(*[
-            set([
-                value
-                for value in condition.values()
-                if isinstance(value, str)
-            ])
-            for condition in fixed_original_conditions.values()
-        ])
-        if unreplaced_ids_in_conditions:
-            raise ValueError(
-                "Please supply replacements for any IDs that appear in the "
-                f"original conditions. Unreplaced IDs: {unreplaced_ids_in_conditions}"
-            )
-        # Replace fixed parameter mapping parameters with their values.
-        self.simulator.replace_in_parameter_mapping(
-            replacements=fix_petab_problem_parameters,
-            scaled=False,
-        )
-        # FIXME check if any parameters remain
-
-        simulator_periods_parameters, _ = \
-            self.get_periods_parameters()
-
-        len_original_timecourse = (
-            len(self.simulator.timecourse.periods)
-            - len(self.timecourse.periods)
-        )
-
-        _, self.simulator_control_parameters = \
-            self.get_periods_parameters(
-                start_period_index=len_original_timecourse,
-            )
-
-        self.simulator_default_problem_parameters_periods = [
-            {
-                **default_problem_parameters,
-                **fixed_original_conditions[period.condition_id],
-                # FIXME assumes the control timecourse always appears after the
-                #       original timecourse
-                **(
-                    simulator_periods_parameters[
-                        period_index - len_original_timecourse
-                    ]
-                    if period_index - len_original_timecourse >= 0
-                    else {}
-                ),
-            }
-            for period_index, period in enumerate(
-                self.simulator.timecourse.periods
-            )
-        ]
-
-        if model_settings is not None:
-            for setter, value in model_settings.items():
-                getattr(self.simulator.amici_model, setter)(value)
-
-        if solver_settings is not None:
-            for setter, value in solver_settings.items():
-                getattr(self.simulator.amici_solver, setter)(value)
-
-    def simulate(
-        self,
-        problem_parameters: Dict[str, float],
-    ):
-        """Simulate the timecourse for a control problem.
-
-        All parameters that appear in any timecourse period condition
-        should have at least default values in for all timecourse periods.
-        i.e. the problem parameters should be a list of dictionaries where
-        all dictionaries have the same keys.
-
-        Args:
-            problem_parameters:
-                Values to substitute in for estimated control parameters,
-                on parameter scale.
-        """
-        # Copy to avoid overwriting user's object.
-        problem_parameters_periods = copy.deepcopy(
-            self.simulator_default_problem_parameters_periods
-        )
-
-        for period_index, problem_parameters_period in enumerate(problem_parameters_periods):
-            for parameter_id, parameter_value in problem_parameters_period.items():
-                # Use the provided value for the control parameter
-                if (
-                    isinstance(parameter_value, str)
-                    and parameter_value in problem_parameters
-                ):
-                    if parameter_id in problem_parameters:
-                        warnings.warn(
-                            f'The parameter `{parameter_id}` takes the value of '
-                            f'the control parameter `{parameter_value}` (period '
-                            f'index: {period_index}). However, values for both the '
-                            'parameter and the control parameter were provided. '
-                            'The value for the control parameter will be used.'
-                        )
-                    parameter_value = problem_parameters[parameter_value]
-                # Else use the provided value for the corresponding
-                # parameter
-                elif parameter_id in problem_parameters:
-                    parameter_value = problem_parameters[parameter_id]
-                # Else use the default value provided to `setup_simulator`
-                elif isinstance(parameter_value, float):
-                    pass
-                # Else use the default value for the
-                # control parameter
-                elif (
-                    isinstance(parameter_value, str)
-                    and isinstance(
-                        (
-                            self
-                            .simulator_control_parameters
-                            [parameter_value]
-                            [VALUE]
-                        ),
-                        float,
-                    )
-                ):
-                    parameter_value = (
-                        self
-                        .simulator_control_parameters
-                        [parameter_value]
-                        [VALUE]
-                    )
-                # Else use nominal value from the control
-                # parameters table, for the corresponding parameter
-                elif not np.isnan(
-                    self
-                    .control_parameter_df
-                    .loc[
-                        self
-                        .simulator_control_parameters
-                        [parameter_value]
-                        [PARAMETER_ID]
-                    ]
-                    [NOMINAL_VALUE]
-                ):
-                    parameter_value = (
-                        self
-                        .control_parameter_df
-                        .loc[
-                            self
-                            .simulator_control_parameters
-                            [parameter_value]
-                            [PARAMETER_ID]
-                        ]
-                        [NOMINAL_VALUE]
-                    )
-                # Else fail
-                else:
-                    breakpoint()
-                    raise ValueError(
-                        'Please supply a value for the control parameter '
-                        f'`{parameter_value}` (instance of parameter `{parameter_id}`). '
-                        'This can be supplied in multiple ways, for example, '
-                        'as a key-value pair in the `problem_parameters` '
-                        'argument of this method.'
-                    )
-                problem_parameters_periods[period_index][parameter_id] = \
-                    parameter_value
-
-        periods_results = self.simulator.simulate(
-            problem_parameters_periods=problem_parameters_periods,
-            scaled_parameters=True,
-            control_parameters=self.simulator_control_parameters,
-        )
-
-        llh = sum(period_results[LLH] for period_results in periods_results)
-        sllh = {}
-        for control_parameter_id, control_description in self.simulator_control_parameters.items():
-            sllh[control_parameter_id] = sum(
-                period_results[SLLH][control_description[PARAMETER_ID]]
-                for period_index, period_results in enumerate(periods_results)
-                if period_index in control_description[PERIODS]
-            )
-
-        results = {
-            LLH: llh,
-            SLLH: sllh,
-            PERIODS_RESULTS: periods_results,
-        }
-
-        return results
+#    def setup_simulator(
+#        self,
+#        simulator_class: Simulator,
+#        petab_problem: petab.Problem,
+#        timecourse_id: str = None,
+#        default_problem_parameters: Dict[str, float] = None,
+#        model_settings: Dict[str, Any] = None,
+#        solver_settings: Dict[str, Any] = None,
+#        fix_petab_problem_parameters: Dict[str, float] = None,
+#    ):
+#        """Setup a timecourse simulator to solve the control problem.
+#
+#        Args:
+#            simulator_class:
+#                The simulator class to use. Should inherit from
+#                `petab_timecourse.Simulator`.
+#            petab_problem:
+#                The original PEtab problem.
+#            timecourse_id:
+#                The ID of the timecourse in the original PEtab problem to use.
+#            default_problem_parameters:
+#                All parameters must have some value for each timecourse period,
+#                for all periods in the original PEtab problem, and the control
+#                problem. Default values for missing parameters can be provided
+#                here. Keys are parameter IDs, values are parameter values.
+#            fix_petab_problem_parameters:
+#                Keys are parameters IDs in `petab_problem.parameter_df`,
+#                values are parameter values. The PEtab problems used by the
+#                simulator and optimizer will fix these parameters
+#                (i.e. they won't be estimated). Parameter values are expected
+#                to be on linear scale.
+#            model_settings:
+#                Keys are AMICI model setters (e.g. `setAlwaysCheckFinite`)
+#                and values are supplied to the setters.
+#            solver_settings:
+#                Keys are AMICI solver setters (e.g. `setAbsoluteTolerance`)
+#                and values are supplied to the setters.
+#        """
+#        if default_problem_parameters is None:
+#            default_problem_parameters = {}
+#
+#        for parameter_id, parameter_value in default_problem_parameters.items():
+#            default_problem_parameters[parameter_id] = \
+#                petab.to_float_if_float(parameter_value)
+#
+#        petab_problem = copy.deepcopy(petab_problem)
+#
+#        if fix_petab_problem_parameters is None:
+#            fix_petab_problem_parameters = {}
+#        for parameter_id, parameter_value in fix_petab_problem_parameters.items():
+#            petab_problem.parameter_df.loc[parameter_id, [
+#                NOMINAL_VALUE,
+#                ESTIMATE,
+#            ]] = [
+#                parameter_value,
+#                0,
+#            ]
+#
+#        self.simulator_control_petab_problem = \
+#            get_control_petab_problem(
+#                petab_control_problem=self,
+#                petab_problem=petab_problem,
+#                timecourse_id=timecourse_id,
+#            )
+#
+#        self.optimizer_control_petab_problem = copy.deepcopy(
+#            self.simulator_control_petab_problem
+#        )
+#        self.optimizer_control_petab_problem.parameter_df = (
+#            pd.concat([
+#                petab_problem.parameter_df.copy(),
+#                self.parameter_df,
+#            ])
+#        )
+#
+#        self.simulator_control_petab_problem.parameter_df = (
+#            pd.concat([
+#                petab_problem.parameter_df.copy(),
+#                self.control_parameter_df,
+#            ])
+#        )
+#
+#        self.simulator = simulator_class(
+#            petab_problem=self.simulator_control_petab_problem,
+#            timecourse_id=CONTROL_TIMECOURSE_ID,
+#        )
+#
+#        # FIXME check whether explicit specification of `plist` is important
+#        #if self.simulator.amici_model is None:
+#        #    raise ValueError(
+#        #        'Simulator must have an AMICI model, to set '
+#        #        'sensitivities correctly.'
+#        #    )
+#        #sensitivity_parameters = {
+#        #    parameter_id: (
+#        #        self
+#        #        .simulator
+#        #        .amici_model
+#        #        .getParameterIds()
+#        #        .index(parameter_id)
+#        #    )
+#        #    for parameter_id in self.simulator_control_petab_problem.x_free_ids
+#        #}
+#
+#        #for amici_edata in self.simulator.amici_edata_periods:
+#        #    amici_edata.plist = list(sensitivity_parameters.values())
+#
+#        original_conditions = {
+#            original_condition_id: dict(
+#                petab_problem
+#                .condition_df
+#                .loc[original_condition_id]
+#            )
+#            for original_condition_id in set(
+#                period.condition_id
+#                for period in Timecourse.from_df(
+#                    timecourse_df=petab_problem.timecourse_df,
+#                    timecourse_id=timecourse_id,
+#                ).periods
+#            )
+#        }
+#        if CONTROL_CONDITION_ID in original_conditions:
+#            raise ValueError(
+#                'Please reimplement the PEtab problem to not have a condition with '
+#                f'ID: {CONTROL_CONDITION_ID}'
+#            )
+#        original_conditions[CONTROL_CONDITION_ID] = {}
+#
+#        # Replace fixed condition parameters with their values.
+#        fixed_original_conditions = {
+#            condition_id: {
+#                k: fix_petab_problem_parameters.get(v, v)
+#                for k, v in condition.items()
+#            }
+#            for condition_id, condition in original_conditions.items()
+#        }
+#        unreplaced_ids_in_conditions = set.union(*[
+#            set([
+#                value
+#                for value in condition.values()
+#                if isinstance(value, str)
+#            ])
+#            for condition in fixed_original_conditions.values()
+#        ])
+#        if unreplaced_ids_in_conditions:
+#            raise ValueError(
+#                "Please supply replacements for any IDs that appear in the "
+#                f"original conditions. Unreplaced IDs: {unreplaced_ids_in_conditions}"
+#            )
+#        # Replace fixed parameter mapping parameters with their values.
+#        self.simulator.replace_in_parameter_mapping(
+#            replacements=fix_petab_problem_parameters,
+#            scaled=False,
+#        )
+#        # FIXME check if any parameters remain
+#
+#        simulator_periods_parameters, _ = \
+#            self.get_periods_parameters()
+#
+#        len_original_timecourse = (
+#            len(self.simulator.timecourse.periods)
+#            - len(self.timecourse.periods)
+#        )
+#
+#        _, self.simulator_control_parameters = \
+#            self.get_periods_parameters(
+#                start_period_index=len_original_timecourse,
+#            )
+#
+#        self.simulator_default_problem_parameters_periods = [
+#            {
+#                **default_problem_parameters,
+#                **fixed_original_conditions[period.condition_id],
+#                # FIXME assumes the control timecourse always appears after the
+#                #       original timecourse
+#                **(
+#                    simulator_periods_parameters[
+#                        period_index - len_original_timecourse
+#                    ]
+#                    if period_index - len_original_timecourse >= 0
+#                    else {}
+#                ),
+#            }
+#            for period_index, period in enumerate(
+#                self.simulator.timecourse.periods
+#            )
+#        ]
+#
+#        if model_settings is not None:
+#            for setter, value in model_settings.items():
+#                getattr(self.simulator.amici_model, setter)(value)
+#
+#        if solver_settings is not None:
+#            for setter, value in solver_settings.items():
+#                getattr(self.simulator.amici_solver, setter)(value)
+#
+#    def simulate(
+#        self,
+#        problem_parameters: Dict[str, float],
+#    ):
+#        """Simulate the timecourse for a control problem.
+#
+#        All parameters that appear in any timecourse period condition
+#        should have at least default values in for all timecourse periods.
+#        i.e. the problem parameters should be a list of dictionaries where
+#        all dictionaries have the same keys.
+#
+#        Args:
+#            problem_parameters:
+#                Values to substitute in for estimated control parameters,
+#                on parameter scale.
+#        """
+#        # Copy to avoid overwriting user's object.
+#        problem_parameters_periods = copy.deepcopy(
+#            self.simulator_default_problem_parameters_periods
+#        )
+#
+#        for period_index, problem_parameters_period in enumerate(problem_parameters_periods):
+#            for parameter_id, parameter_value in problem_parameters_period.items():
+#                # Use the provided value for the control parameter
+#                if (
+#                    isinstance(parameter_value, str)
+#                    and parameter_value in problem_parameters
+#                ):
+#                    if parameter_id in problem_parameters:
+#                        warnings.warn(
+#                            f'The parameter `{parameter_id}` takes the value of '
+#                            f'the control parameter `{parameter_value}` (period '
+#                            f'index: {period_index}). However, values for both the '
+#                            'parameter and the control parameter were provided. '
+#                            'The value for the control parameter will be used.'
+#                        )
+#                    parameter_value = problem_parameters[parameter_value]
+#                # Else use the provided value for the corresponding
+#                # parameter
+#                elif parameter_id in problem_parameters:
+#                    parameter_value = problem_parameters[parameter_id]
+#                # Else use the default value provided to `setup_simulator`
+#                elif isinstance(parameter_value, float):
+#                    pass
+#                # Else use the default value for the
+#                # control parameter
+#                elif (
+#                    isinstance(parameter_value, str)
+#                    and isinstance(
+#                        (
+#                            self
+#                            .simulator_control_parameters
+#                            [parameter_value]
+#                            [VALUE]
+#                        ),
+#                        float,
+#                    )
+#                ):
+#                    parameter_value = (
+#                        self
+#                        .simulator_control_parameters
+#                        [parameter_value]
+#                        [VALUE]
+#                    )
+#                # Else use nominal value from the control
+#                # parameters table, for the corresponding parameter
+#                elif not np.isnan(
+#                    self
+#                    .control_parameter_df
+#                    .loc[
+#                        self
+#                        .simulator_control_parameters
+#                        [parameter_value]
+#                        [PARAMETER_ID]
+#                    ]
+#                    [NOMINAL_VALUE]
+#                ):
+#                    parameter_value = (
+#                        self
+#                        .control_parameter_df
+#                        .loc[
+#                            self
+#                            .simulator_control_parameters
+#                            [parameter_value]
+#                            [PARAMETER_ID]
+#                        ]
+#                        [NOMINAL_VALUE]
+#                    )
+#                # Else fail
+#                else:
+#                    breakpoint()
+#                    raise ValueError(
+#                        'Please supply a value for the control parameter '
+#                        f'`{parameter_value}` (instance of parameter `{parameter_id}`). '
+#                        'This can be supplied in multiple ways, for example, '
+#                        'as a key-value pair in the `problem_parameters` '
+#                        'argument of this method.'
+#                    )
+#                problem_parameters_periods[period_index][parameter_id] = \
+#                    parameter_value
+#
+#        periods_results = self.simulator.simulate(
+#            problem_parameters_periods=problem_parameters_periods,
+#            scaled_parameters=True,
+#            control_parameters=self.simulator_control_parameters,
+#        )
+#
+#        llh = sum(period_results[LLH] for period_results in periods_results)
+#        sllh = {}
+#        for control_parameter_id, control_description in self.simulator_control_parameters.items():
+#            sllh[control_parameter_id] = sum(
+#                period_results[SLLH][control_description[PARAMETER_ID]]
+#                for period_index, period_results in enumerate(periods_results)
+#                if period_index in control_description[PERIODS]
+#            )
+#
+#        results = {
+#            LLH: llh,
+#            SLLH: sllh,
+#            PERIODS_RESULTS: periods_results,
+#        }
+#
+#        return results
 
 
 def get_period_id(period_index: int, time: float):
@@ -998,6 +998,13 @@ def get_control_petab_problem(
     petab_problem.measurement_df[TIME] += start_time
     petab_problem.measurement_df[SIMULATION_CONDITION_ID] = \
         CONTROL_TIMECOURSE_ID
+
+    petab_problem.parameter_df = (
+        pd.concat([
+            petab_problem.parameter_df.copy(),
+            petab_control_problem.parameter_df,
+        ])
+    )
 
     return petab_problem
 
