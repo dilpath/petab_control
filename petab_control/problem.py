@@ -37,10 +37,10 @@ from petab_timecourse.C import (
     TIMECOURSE_ID,
     PERIOD,
 )
-from petab_timecourse.simulator import (
-    Simulator,
-    #AmiciSimulator,
-)
+#from petab_timecourse.simulator import (
+#    Simulator,
+#    #AmiciSimulator,
+#)
 import yaml
 
 from .constants import (
@@ -972,6 +972,7 @@ def get_control_petab_problem(
         pd.Series(name=CONTROL_TIMECOURSE_ID).to_frame().T,
     ])
     condition_df.index.name = CONDITION_ID
+    #breakpoint()
 
     full_timecourse = Timecourse.from_timecourses(
         timecourses=[estimate_timecourse, control_timecourse],
