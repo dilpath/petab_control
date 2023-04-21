@@ -1,0 +1,8 @@
+parameterId	parameterScale	lowerBound	upperBound	nominalValue	estimate	control_target	control_time
+control_parameter__target__influx__time__15_0__value__0_1	log10	0.0001	10000	0.1	1	influx	15.0
+control_parameter__target__influx__time__35_0__value__estimate	log10	0.0001	10000	0.1	1	influx	35.0
+control_parameter__target__influx__time__55_0__value__estimate	log10	0.0001	10000	0.1	1	influx	55.0
+control_parameter__target__influx__time__65_0__value__estimate	log10	0.0001	10000	0.1	1	influx	65.0
+control_parameter__target__influx__time__85_0__value__estimate	log10	0.0001	10000	0.1	1	influx	85.0
+control_parameter__target__influx__time__75_0__value__5_0	log10	0.0001	10000	0.1	1	influx	75.0
+control_parameter__target__influx__time__95_0__value__estimate	log10	0.0001	10000	0.1	1	influx	95.0

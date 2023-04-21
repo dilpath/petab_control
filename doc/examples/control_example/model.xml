@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level3/version1/core" level="3" version="1">
+  <model id="model__control_events_petab_problem" name="model">
+    <listOfCompartments>
+      <compartment id="Compartment" size="1" constant="true"/>
+    </listOfCompartments>
+    <listOfSpecies>
+      <species id="substrate" compartment="Compartment" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+    </listOfSpecies>
+    <listOfParameters>
+      <parameter id="t" name="t" constant="false"/>
+      <parameter id="substrate0" name="substrate0" value="0" constant="true"/>
+      <parameter id="decay" name="decay" value="0" constant="true"/>
+      <parameter id="influx" name="influx" value="0" constant="false"/>
+      <parameter id="control_parameter__target__influx__time__15_0__value__0_1" value="0.1" constant="true"/>
+      <parameter id="switch_parameter__target__influx__time__15_0__value__0_1" value="0" constant="false"/>
+      <parameter id="control_parameter__target__influx__time__35_0__value__estimate" value="0.1" constant="true"/>
+      <parameter id="switch_parameter__target__influx__time__35_0__value__estimate" value="0" constant="false"/>
+      <parameter id="control_parameter__target__influx__time__55_0__value__estimate" value="0.1" constant="true"/>
+      <parameter id="switch_parameter__target__influx__time__55_0__value__estimate" value="0" constant="false"/>
+      <parameter id="control_parameter__target__influx__time__65_0__value__estimate" value="0.1" constant="true"/>
+      <parameter id="switch_parameter__target__influx__time__65_0__value__estimate" value="0" constant="false"/>
+      <parameter id="control_parameter__target__influx__time__85_0__value__estimate" value="0.1" constant="true"/>
+      <parameter id="switch_parameter__target__influx__time__85_0__value__estimate" value="0" constant="false"/>
+      <parameter id="control_parameter__target__influx__time__75_0__value__5_0" value="5" constant="true"/>
+      <parameter id="switch_parameter__target__influx__time__75_0__value__5_0" value="0" constant="false"/>
+      <parameter id="control_parameter__target__influx__time__95_0__value__estimate" value="0.1" constant="true"/>
+      <parameter id="switch_parameter__target__influx__time__95_0__value__estimate" value="0" constant="false"/>
+    </listOfParameters>
+    <listOfInitialAssignments>
+      <initialAssignment symbol="substrate">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <ci> substrate0 </ci>
+        </math>
+      </initialAssignment>
+    </listOfInitialAssignments>
+    <listOfRules>
+      <assignmentRule variable="t">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <csymbol encoding="text" definitionURL="http://www.sbml.org/sbml/symbols/time"> time </csymbol>
+        </math>
+      </assignmentRule>
+      <rateRule variable="substrate">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <apply>
+              <times/>
+              <apply>
+                <minus/>
+                <cn type="integer"> 1 </cn>
+              </apply>
+              <ci> decay </ci>
+              <ci> substrate </ci>
+            </apply>
+            <ci> influx </ci>
+          </apply>
+        </math>
+      </rateRule>
+    </listOfRules>
+    <listOfEvents>
+      <event id="control_event__target__influx__time__15_0__value__0_1" useValuesFromTriggerTime="true">
+        <trigger initialValue="true" persistent="true">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <geq/>
+              <csymbol encoding="text" definitionURL="http://www.sbml.org/sbml/symbols/time"> time </csymbol>
+              <cn> 30 </cn>
+            </apply>
+          </math>
+        </trigger>
+        <listOfEventAssignments>
+          <eventAssignment variable="influx">
+            <math xmlns="http://www.w3.org/1998/Math/MathML">
+              <cn> 0.1 </cn>
+            </math>
+          </eventAssignment>
+        </listOfEventAssignments>
+      </event>
+      <event id="control_event__target__influx__time__35_0__value__estimate" useValuesFromTriggerTime="true">
+        <trigger initialValue="true" persistent="true">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <geq/>
+              <csymbol encoding="text" definitionURL="http://www.sbml.org/sbml/symbols/time"> time </csymbol>
+              <cn> 50 </cn>
+            </apply>
+          </math>
+        </trigger>
+        <listOfEventAssignments>
+          <eventAssignment variable="influx">
+            <math xmlns="http://www.w3.org/1998/Math/MathML">
+              <ci> control_parameter__target__influx__time__35_0__value__estimate </ci>
+            </math>
+          </eventAssignment>
+        </listOfEventAssignments>
+      </event>
+      <event id="control_event__target__influx__time__55_0__value__estimate" useValuesFromTriggerTime="true">
+        <trigger initialValue="true" persistent="true">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <geq/>
+              <csymbol encoding="text" definitionURL="http://www.sbml.org/sbml/symbols/time"> time </csymbol>
+              <cn> 70 </cn>
+            </apply>
+          </math>
+        </trigger>
+        <listOfEventAssignments>
+          <eventAssignment variable="influx">
+            <math xmlns="http://www.w3.org/1998/Math/MathML">
+              <ci> control_parameter__target__influx__time__55_0__value__estimate </ci>
+            </math>
+          </eventAssignment>
+        </listOfEventAssignments>
+      </event>
+      <event id="control_event__target__influx__time__65_0__value__estimate" useValuesFromTriggerTime="true">
+        <trigger initialValue="true" persistent="true">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <geq/>
+              <csymbol encoding="text" definitionURL="http://www.sbml.org/sbml/symbols/time"> time </csymbol>
+              <cn> 80 </cn>
+            </apply>
+          </math>
+        </trigger>
+        <listOfEventAssignments>
+          <eventAssignment variable="influx">
+            <math xmlns="http://www.w3.org/1998/Math/MathML">
+              <ci> control_parameter__target__influx__time__65_0__value__estimate </ci>
+            </math>
+          </eventAssignment>
+        </listOfEventAssignments>
+      </event>
+      <event id="control_event__target__influx__time__85_0__value__estimate" useValuesFromTriggerTime="true">
+        <trigger initialValue="true" persistent="true">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <geq/>
+              <csymbol encoding="text" definitionURL="http://www.sbml.org/sbml/symbols/time"> time </csymbol>
+              <cn> 100 </cn>
+            </apply>
+          </math>
+        </trigger>
+        <listOfEventAssignments>
+          <eventAssignment variable="influx">
+            <math xmlns="http://www.w3.org/1998/Math/MathML">
+              <ci> control_parameter__target__influx__time__85_0__value__estimate </ci>
+            </math>
+          </eventAssignment>
+        </listOfEventAssignments>
+      </event>
+      <event id="control_event__target__influx__time__75_0__value__5_0" useValuesFromTriggerTime="true">
+        <trigger initialValue="true" persistent="true">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <geq/>
+              <csymbol encoding="text" definitionURL="http://www.sbml.org/sbml/symbols/time"> time </csymbol>
+              <cn> 90 </cn>
+            </apply>
+          </math>
+        </trigger>
+        <listOfEventAssignments>
+          <eventAssignment variable="influx">
+            <math xmlns="http://www.w3.org/1998/Math/MathML">
+              <cn> 5 </cn>
+            </math>
+          </eventAssignment>
+        </listOfEventAssignments>
+      </event>
+      <event id="control_event__target__influx__time__95_0__value__estimate" useValuesFromTriggerTime="true">
+        <trigger initialValue="true" persistent="true">
+          <math xmlns="http://www.w3.org/1998/Math/MathML">
+            <apply>
+              <geq/>
+              <csymbol encoding="text" definitionURL="http://www.sbml.org/sbml/symbols/time"> time </csymbol>
+              <cn> 110 </cn>
+            </apply>
+          </math>
+        </trigger>
+        <listOfEventAssignments>
+          <eventAssignment variable="influx">
+            <math xmlns="http://www.w3.org/1998/Math/MathML">
+              <ci> control_parameter__target__influx__time__95_0__value__estimate </ci>
+            </math>
+          </eventAssignment>
+        </listOfEventAssignments>
+      </event>
+    </listOfEvents>
+  </model>
+</sbml>
