@@ -1,3 +1,4 @@
+import itertools
 from pathlib import Path
 from typing import Dict, Set
 
@@ -31,10 +32,19 @@ def problem_experimental_conditions(
     Returns:
         The set of experimental condition IDs.
     """
-    conditions = set(
-        list(problem.control_df[SIMULATION_CONDITION_ID]) +
-        list(problem.objective_measurement_df[SIMULATION_CONDITION_ID])
-    )
+    #breakpoint()
+    #conditions = set(
+    #    list(problem.control_df[SIMULATION_CONDITION_ID]) +
+    #    list(problem.objective_measurement_df[SIMULATION_CONDITION_ID])
+    #)
+    conditions = [
+        "__".join(condition_parts)
+        for condition_parts in itertools.product(
+            set(problem.objective_measurement_df.datasetId),
+            set(problem.control_df.control_id)
+        )
+    ]
+    print(conditions)
     return conditions
 
 
