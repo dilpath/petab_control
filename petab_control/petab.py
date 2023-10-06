@@ -177,67 +177,69 @@ def parameter_controls_to_parameter_df(
     parameter_df = petab.get_parameter_df(pd.DataFrame(data=rows))
     return parameter_df
 
-def parameter_controls_to_timecourse(
-    parameter_controls: Dict[str, Sequence['ParameterControl']],
-    petab_problem: petab.Problem,
-    problem: 'petab_control.Problem',
-) -> List[pd.DataFrame]:
-    # FIXME currently only one parameter can be optimized.
-    #       To resolve: write method to get parameter value at arbitrary time
-    #       points, by interpolating (constant) values
-    if len(parameter_controls) != 1:
-        raise NotImplementedError(
-            'Currently only one parameter ID have be split into an optimally '
-            'controlled timecourse.'
-        )
-    # FIXME currently assumes only one experimental condition
-    #       (asserted in `petab_control.Problem.__init__`)
-    condition_id = one(problem_experimental_conditions(problem))
-    condition_template = {}
-    if condition_id in petab_problem.condition_df.index:
-        condition_template = dict(petab_problem.condition_df.loc[condition_id])
-
-    parameter_id = one(parameter_controls)
-    controls = sorted(
-        parameter_controls[parameter_id],
-        key=lambda control: control.time,
-    )
-
-    # TODO alternatively construct a `petab_timecourse.Timecourse`
-    timecourse_data = {
-        TIMECOURSE_ID: [condition_id],
-        TIMECOURSE: [
-            ';'.join([
-                f'{control.time}:{control.get_control_condition_id()}'
-                for control in controls
-            ]),
-        ]
-    }
-    timecourse_df = get_timecourse_df(pd.DataFrame(data=timecourse_data))
-
-    condition_data = [
-        {
-            CONDITION_ID: control0.get_control_condition_id(),
-            **condition_template,
-            **{
-                control.get_switch_parameter_id(): (
-                    1
-                    if control.get_control_condition_id()
-                       == control0.get_control_condition_id()
-                    else 0
-                )
-                for control in controls
-            }
-        }
-        for control0 in controls
-    ]
-    condition_data.append({
-        CONDITION_ID: condition_id,
-    })
-
-    condition_df = get_condition_df(pd.DataFrame(data=condition_data))
-
-    return condition_df, timecourse_df
+#def parameter_controls_to_timecourse(
+#    parameter_controls: Dict[str, Sequence['ParameterControl']],
+#    petab_problem: petab.Problem,
+#    problem: 'petab_control.Problem',
+#) -> List[pd.DataFrame]:
+#    # FIXME currently only one parameter can be optimized.
+#    #       To resolve: write method to get parameter value at arbitrary time
+#    #       points, by interpolating (constant) values
+#    if len(parameter_controls) != 1:
+#        raise NotImplementedError(
+#            'Currently only one parameter ID have be split into an optimally '
+#            'controlled timecourse.'
+#        )
+#    # FIXME currently assumes only one experimental condition
+#    #       (asserted in `petab_control.Problem.__init__`)
+#    #condition_id = one(problem_experimental_conditions(problem))
+#    raise ValueError('use new')
+#    condition_id = "timecourse1"
+#    condition_template = {}
+#    if condition_id in petab_problem.condition_df.index:
+#        condition_template = dict(petab_problem.condition_df.loc[condition_id])
+#
+#    parameter_id = one(parameter_controls)
+#    controls = sorted(
+#        parameter_controls[parameter_id],
+#        key=lambda control: control.time,
+#    )
+#
+#    # TODO alternatively construct a `petab_timecourse.Timecourse`
+#    timecourse_data = {
+#        TIMECOURSE_ID: [condition_id],
+#        TIMECOURSE: [
+#            ';'.join([
+#                f'{control.time}:{control.get_control_condition_id()}'
+#                for control in controls
+#            ]),
+#        ]
+#    }
+#    timecourse_df = get_timecourse_df(pd.DataFrame(data=timecourse_data))
+#
+#    condition_data = [
+#        {
+#            CONDITION_ID: control0.get_control_condition_id(),
+#            **condition_template,
+#            **{
+#                control.get_switch_parameter_id(): (
+#                    1
+#                    if control.get_control_condition_id()
+#                       == control0.get_control_condition_id()
+#                    else 0
+#                )
+#                for control in controls
+#            }
+#        }
+#        for control0 in controls
+#    ]
+#    condition_data.append({
+#        CONDITION_ID: condition_id,
+#    })
+#
+#    condition_df = get_condition_df(pd.DataFrame(data=condition_data))
+#
+#    return condition_df, timecourse_df
 
 def get_controls_at_timepoint(
     parameter_controls,  # typehint
@@ -275,14 +277,17 @@ def get_controls_at_timepoint(
 def parameter_controls_to_timecourse_new(
     parameter_controls: Dict[str, Sequence['ParameterControl']],
     petab_problem: petab.Problem,
-    problem: 'petab_control.Problem',
+    petab_control_problem: 'petab_control.Problem',
+    timecourse_id: str,
 ) -> List[pd.DataFrame]:
     # FIXME currently assumes only one experimental condition
     #       (asserted in `petab_control.Problem.__init__`)
-    condition_id = one(problem_experimental_conditions(problem))
+    #print(problem_experimental_conditions(problem))
+    #condition_id = one(problem_experimental_conditions(problem))
+    #condition_id = "timecourse1"
     condition_template = {}
-    if condition_id in petab_problem.condition_df.index:
-        condition_template = dict(petab_problem.condition_df.loc[condition_id])
+    if timecourse_id in petab_problem.condition_df.index:
+        condition_template = dict(petab_problem.condition_df.loc[timecourse_id])
 
     times = sorted(set(
         control.time
@@ -296,7 +301,7 @@ def parameter_controls_to_timecourse_new(
     }
 
     timecourse_data = {
-        TIMECOURSE_ID: [condition_id],
+        TIMECOURSE_ID: [timecourse_id],
         TIMECOURSE: [
             ';'.join([
                 f'{time}:{timecourse_condition_id}'
@@ -326,7 +331,7 @@ def parameter_controls_to_timecourse_new(
         for time, timecourse_condition_id in timecourse_condition_ids.items()
     ]
     condition_data.append({
-        CONDITION_ID: condition_id,
+        CONDITION_ID: timecourse_id,
     })
 
     condition_df = get_condition_df(pd.DataFrame(data=condition_data))
@@ -334,14 +339,21 @@ def parameter_controls_to_timecourse_new(
     parameter_data = [
         {
             PARAMETER_ID: control.get_control_parameter_id(),
-            **problem.control_parameter_df.loc[parameter_id].to_dict(),
-            ESTIMATE: 1,
+            **petab_control_problem.control_parameter_df.loc[parameter_id].to_dict(),
+            NOMINAL_VALUE: (
+                control.value
+                if control.value != ESTIMATE
+                else None
+            ),
+            ESTIMATE: int(control.value == ESTIMATE),
             CONTROL_TARGET: control.target_id,
             CONTROL_TIME: control.time,
         }
         for parameter_id, controls in parameter_controls.items()
         for control in controls
     ]
+    #for parameter_id in parameter_controls:
+    #    print(petab_control_problem.control_parameter_df.loc[parameter_id].to_dict())
 
     parameter_df = get_parameter_df(pd.DataFrame(data=parameter_data))
 
