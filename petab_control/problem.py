@@ -20,8 +20,10 @@ from petab import (
 )
 from petab.C import (
     CONDITION_ID,
+    ESTIMATE,
     NOMINAL_VALUE,
     PARAMETER_ID,
+    PARAMETER_SCALE,
     SIMULATION_CONDITION_ID,
     TIME,
     TIME_STEADY_STATE,
@@ -777,7 +779,32 @@ def get_period_id(period_index: int, time: float):
 def get_control_events_petab_problem(
     petab_control_problem: Problem,
     petab_problem: petab.Problem,
+    unscaled_parameters0: Dict[str, float] = None,
+    timecourse_id: str = None,
 ) -> petab.Problem:
+    if unscaled_parameters0 is None:
+        unscaled_parameters0 = {}
+
+    if timecourse_id is None:
+        timecourse_id = one(petab_problem.condition_df.index)
+
+    required_parameters0 = set(petab_problem.parameter_df.loc[petab_problem.parameter_df[ESTIMATE] == 1].index)
+    if missing_parameters0 := required_parameters0.difference(unscaled_parameters0):
+        raise ValueError(
+            f'Please supply estimates for the original problem. Currently missing: {sorted(missing_parameters0)}'
+        )
+
+    parameter_data0 = []
+    for parameter_id, nominal_value in unscaled_parameters0.items():
+        parameter_datum0 = {
+            PARAMETER_ID: parameter_id,
+            PARAMETER_SCALE: petab_problem.parameter_df.loc[parameter_id, PARAMETER_SCALE],
+            NOMINAL_VALUE: nominal_value,
+            ESTIMATE: 0,
+        }
+        parameter_data0.append(parameter_datum0)
+    parameter_df0 = petab.get_parameter_df(pd.DataFrame(parameter_data0))
+
     petab_problem = copy.deepcopy(petab_problem)
 
     start_time = petab_control_problem.start_time
@@ -785,9 +812,9 @@ def get_control_events_petab_problem(
         start_time = petab_problem.measurement_df[TIME].max()
 
     sbml_model = petab_problem.sbml_model
-    petab_problem.sbml_model.setId(
-        f'{petab_problem.sbml_model.getId()}__control_events_petab_problem'
-    )
+    model_id = f'{petab_problem.sbml_model.getId()}__control_events_petab_problem'
+    petab_problem.model.sbml_model.setId(model_id)
+    petab_problem.model.model_id = model_id
 
     # Generate control and switch parameters
     parameter_controls = {}
@@ -849,32 +876,34 @@ def get_control_events_petab_problem(
     # END FIXME
 
 
-    parameter_df = parameter_controls_to_parameter_df(
-        parameter_controls,
-        # FIXME currently, the estimation problem of control parameters is
-        #       set to the estimation problem for the parent parameter.
-        #       Add `controlParameterId` to the controls table to manually
-        #       specify the IDs that control parameters should take, s.t.
-        #       a PEtab parameters table for the estimation of these
-        #       parameters can also be individually specified.
-        petab_control_problem.control_parameter_df,
-    )
+    #parameter_df = parameter_controls_to_parameter_df(
+    #    parameter_controls,
+    #    # FIXME currently, the estimation problem of control parameters is
+    #    #       set to the estimation problem for the parent parameter.
+    #    #       Add `controlParameterId` to the controls table to manually
+    #    #       specify the IDs that control parameters should take, s.t.
+    #    #       a PEtab parameters table for the estimation of these
+    #    #       parameters can also be individually specified.
+    #    petab_control_problem.control_parameter_df,
+    #)
 
     condition_df, parameter_df, timecourse_df = \
         parameter_controls_to_timecourse_new(
             # FIXME use kwargs
-            parameter_controls,
-            petab_problem,
-            petab_control_problem,
+            parameter_controls=parameter_controls,
+            petab_problem=petab_problem,
+            petab_control_problem=petab_control_problem,
+            timecourse_id=timecourse_id,
         )
 
     petab_problem.condition_df = condition_df
     petab_problem.measurement_df = petab_control_problem.objective_measurement_df
-    petab_problem.parameter_df = parameter_df
+    petab_problem.parameter_df = pd.concat([parameter_df, parameter_df0])
     petab_problem.observable_df = petab_control_problem.objective_observable_df
     petab_problem.timecourse_df = timecourse_df
 
     petab_problem.measurement_df[TIME] += start_time
+    petab_problem.measurement_df[SIMULATION_CONDITION_ID] = "timecourse1"
 
     return petab_problem
 
@@ -1006,6 +1035,8 @@ def get_control_petab_problem(
             petab_control_problem.parameter_df,
         ])
     )
+
+    #breakpoint()
 
     return petab_problem
 
